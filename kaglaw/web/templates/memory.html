@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Memory · kaglaw{% endblock %}
+{% block body %}
+<h1>Bộ nhớ dài hạn</h1>
+<p class="muted">Các fact/sở thích ở đây được <b>tự chèn vào đầu MỌI cuộc chat</b> — agent sẽ nhớ xuyên
+  suốt, không cần nhắc lại. (Agent cũng tự lưu qua tool <code>remember</code>.)</p>
+
+<section>
+  <h2>Thêm ghi nhớ</h2>
+  <form action="/memory/add" method="post" class="row" style="align-items:flex-end;gap:12px;">
+    <label style="flex:1;min-width:280px;">Nội dung
+      <input name="text" required placeholder="VD: luôn dùng nick main, metric AUC, 5-fold CV">
+    </label>
+    <label>Loại
+      <select name="kind">
+        <option value="preference">preference</option>
+        <option value="fact">fact</option>
+        <option value="note">note</option>
+      </select>
+    </label>
+    <button class="btn-primary">+ Lưu</button>
+  </form>
+</section>
+
+<section>
+  <h2>Đã lưu ({{ memories|length }})</h2>
+  <table class="grid">
+    <thead><tr><th>#</th><th>Loại</th><th>Nội dung</th><th>Pinned</th><th>Tạo lúc</th><th></th></tr></thead>
+    <tbody>
+      {% for m in memories %}
+      <tr>
+        <td>{{ m.id }}</td>
+        <td><span class="status">{{ m.kind }}</span></td>
+        <td>{{ m.text }}</td>
+        <td>{% if m.pinned %}📌{% else %}—{% endif %}</td>
+        <td><small class="muted">{{ m.created_at }}</small></td>
+        <td>
+          <form action="/memory/{{ m.id }}/delete" method="post"
+                onsubmit="return confirm('Xoá ghi nhớ #{{ m.id }}?');">
+            <button class="btn-danger">Xoá</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">Chưa có ghi nhớ nào. Thêm ở trên, hoặc bảo agent "nhớ là …".</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

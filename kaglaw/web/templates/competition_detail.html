@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ competition }} · kaglaw{% endblock %}
+{% block body %}
+<div class="row-between">
+  <h1>{{ competition }}</h1>
+  <form action="/competitions/sync" method="post" class="inline">
+    <input type="hidden" name="competition" value="{{ competition }}">
+    <button>Sync now</button>
+  </form>
+</div>
+
+{% if submissions %}
+<table>
+  <tr>
+    <th>ID</th><th>Nick</th><th>File</th><th>Description</th>
+    <th>Submitted</th><th>Public</th><th>Private</th><th>Status</th><th>Rank (public)</th>
+  </tr>
+  {% for s in submissions %}
+    <tr>
+      <td>{{ s.id }}</td>
+      <td>{{ s.account_nick }}</td>
+      <td>{{ s.file_name }}</td>
+      <td>{{ s.description }}</td>
+      <td>{{ s.submitted_at }}</td>
+      <td><b>{{ s.public_score or "" }}</b></td>
+      <td>{{ s.private_score or "" }}</td>
+      <td><span class="status status-{{ s.status }}">{{ s.status }}</span></td>
+      <td>{{ s.rank_public or "" }}{% if s.leaderboard_size %} / {{ s.leaderboard_size }}{% endif %}</td>
+    </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="muted">No submissions yet. Hit "Sync now" to pull from Kaggle.</p>
+{% endif %}
+{% endblock %}

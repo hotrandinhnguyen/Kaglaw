@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Notebooks · kaglaw{% endblock %}
+{% block body %}
+<h1>Notebooks</h1>
+
+<p class="muted">💡 Mẹo: bạn có thể <a href="/chat">nhờ kaglaw tự viết notebook trong khung Chat</a>
+  ("viết cho tôi notebook baseline LightGBM cho comp X, bật GPU"). Agent sẽ tạo file code và
+  đăng ký vào đây tự động.</p>
+
+<section>
+  <h2>Import từ Kaggle</h2>
+  <form action="/notebooks/import" method="post" class="row" style="align-items:flex-end;gap:12px;">
+    <label style="flex:1;min-width:220px;">Kernel ref <input name="kernel_ref" required placeholder="username/notebook-slug"></label>
+    <label>Pull bằng nick
+      <select name="as_nick">
+        <option value="">(nick đầu tiên)</option>
+        {% for a in accounts %}<option value="{{ a.nick }}">{{ a.nick }}</option>{% endfor %}
+      </select>
+    </label>
+    <button class="btn-primary">⬇ Import để sửa</button>
+  </form>
+  <p class="muted">Kéo source + settings của kernel có sẵn về kaglaw thành notebook để sửa rồi push version mới.</p>
+</section>
+
+<section>
+  <h2>Upload notebook / script</h2>
+  <form action="/notebooks/upload" method="post" enctype="multipart/form-data" class="stack">
+    <label>Title <input name="title" required placeholder="My Awesome NB"></label>
+    <label>File <input type="file" name="notebook_file" accept=".ipynb,.py,.R,.Rmd" required></label>
+    <div class="row">
+      <label>Language
+        <select name="language">
+          <option>python</option><option>r</option><option>rmarkdown</option>
+        </select>
+      </label>
+      <label>Type
+        <select name="kernel_type">
+          <option>notebook</option><option>script</option>
+        </select>
+      </label>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" name="enable_gpu"> GPU</label>
+      <label><input type="checkbox" name="enable_tpu"> TPU</label>
+      <label><input type="checkbox" name="enable_internet" checked> Internet</label>
+    </div>
+    <label>Dataset sources (csv, <code>user/slug</code>) <input name="dataset_sources" placeholder="user/dataset1, user/dataset2"></label>
+    <label>Competition sources (csv) <input name="competition_sources" placeholder="titanic"></label>
+    <label>Kernel sources (csv) <input name="kernel_sources"></label>
+    <button class="btn-primary">Save</button>
+  </form>
+</section>
+
+<section>
+  <h2>Registered ({{ notebooks|length }})</h2>
+  {% for n in notebooks %}
+    <div class="nb-card">
+      <div class="row-between">
+        <h3>{{ n.title }} <small class="muted">#{{ n.id }} · {{ n.language }} · {{ n.kernel_type }}{% if n.enable_gpu %} · GPU{% endif %}{% if n.enable_tpu %} · TPU{% endif %}</small></h3>
+        <form action="/notebooks/{{ n.id }}/delete" method="post" onsubmit="return confirm('Delete notebook {{ n.title }}?');">
+          <button class="btn-danger">Delete</button>
+        </form>
+      </div>
+      <p class="muted"><code>{{ n.local_path }}</code></p>
+      <details>
+        <summary>View / edit code</summary>
+        <div hx-get="/notebooks/{{ n.id }}/editor"
+             hx-trigger="revealed once" hx-swap="innerHTML">Loading…</div>
+      </details>
+      <form hx-post="/notebooks/{{ n.id }}/test-local" hx-target="#test-result-{{ n.id }}"
+            hx-swap="innerHTML" hx-indicator="#test-spin-{{ n.id }}" style="margin-top:6px;">
+        <button>▶ Test locally (smoke run)</button>
+        <span id="test-spin-{{ n.id }}" class="htmx-indicator muted">đang chạy…</span>
+      </form>
+      <div id="test-result-{{ n.id }}" class="result" style="margin-top:6px;"></div>
+      <details>
+        <summary>Push to accounts</summary>
+        <form hx-post="/notebooks/{{ n.id }}/push" hx-target="#push-result-{{ n.id }}" hx-swap="innerHTML">
+          <div class="account-grid">
+          {% for a in accounts %}
+            <label><input type="checkbox" name="nicks" value="{{ a.nick }}"> {{ a.nick }} <small class="muted">({{ a.username }})</small></label>
+          {% endfor %}
+          </div>
+          <label>Version notes <input name="version_notes"></label>
+          <button class="btn-primary">Push to selected</button>
+        </form>
+        <pre id="push-result-{{ n.id }}" class="result"></pre>
+      </details>
+    </div>
+  {% else %}
+    <p class="muted">No notebooks registered yet.</p>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,25 @@
+# --- Secrets & runtime data (NEVER commit) ---
+# data/ chứa kaggle.json (API key), SQLite db, outputs, exports, snapshot code…
+data/
+
+# --- Virtual environment ---
+.venv/
+venv/
+env/
+
+# --- Python build / cache ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Harness / IDE / OS ---
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

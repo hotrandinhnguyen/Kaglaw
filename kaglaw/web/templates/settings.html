@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Settings · kaglaw{% endblock %}
+{% block body %}
+<h1>Settings</h1>
+
+<section>
+  <h2>LLM provider</h2>
+  <form action="/settings/save" method="post" class="stack">
+    <label>Active provider
+      <select name="provider">
+        <option value="anthropic" {% if provider == "anthropic" %}selected{% endif %}>Anthropic Claude</option>
+        <option value="openai" {% if provider == "openai" %}selected{% endif %}>OpenAI</option>
+      </select>
+    </label>
+
+    <fieldset>
+      <legend>Anthropic</legend>
+      <label>Model <input name="anthropic_model" value="{{ anthropic_model or 'claude-sonnet-4-6' }}"
+              placeholder="claude-sonnet-4-6 / claude-opus-4-7 / claude-haiku-4-5"></label>
+      <label>API key {% if anthropic_key_set %}<small class="muted">(đã lưu — gõ để thay)</small>{% endif %}
+        <input type="password" name="anthropic_key" placeholder="sk-ant-..." autocomplete="off"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>OpenAI</legend>
+      <label>Model <input name="openai_model" value="{{ openai_model or 'gpt-4o' }}"
+              placeholder="gpt-4o / gpt-4o-mini / o3"></label>
+      <label>API key {% if openai_key_set %}<small class="muted">(đã lưu — gõ để thay)</small>{% endif %}
+        <input type="password" name="openai_key" placeholder="sk-..." autocomplete="off"></label>
+    </fieldset>
+
+    <button class="btn-primary">Save</button>
+  </form>
+</section>
+
+<section>
+  <h2>Env-var override</h2>
+  <p class="muted">Bạn cũng có thể set biến môi trường <code>ANTHROPIC_API_KEY</code> / <code>OPENAI_API_KEY</code>
+    trước khi chạy <code>run.py</code> — nếu không lưu key trong UI, app sẽ fallback về env.</p>
+</section>
+{% endblock %}

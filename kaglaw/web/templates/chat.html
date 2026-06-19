@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}{{ conv.title or "Chat" }} · kaglaw{% endblock %}
+{% block body %}
+<div class="row-between">
+  <div>
+    <h1 style="margin-bottom:4px;">{{ conv.title or "(untitled chat)" }}</h1>
+    <small class="muted">#{{ conv.id }} · {{ conv.provider }} / <code>{{ conv.model }}</code></small>
+  </div>
+  <div class="row">
+    <a href="/chat">← All chats</a>
+    <form action="/chat/{{ conv.id }}/delete" method="post" onsubmit="return confirm('Delete this chat?');" class="inline">
+      <button class="btn-danger">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div id="transcript" class="transcript">
+  {% include "_chat_transcript.html" %}
+</div>
+
+<div id="status-bar" class="status-bar"></div>
+
+<form id="chat-form" class="chat-input">
+  <textarea id="prompt" name="prompt" rows="3" required
+            placeholder="Sai kaglaw làm gì đó… (Shift+Enter để xuống dòng, Enter để gửi)"
+            autofocus></textarea>
+  <button id="send-btn" class="btn-primary" type="submit">Send</button>
+  <button id="stop-btn" class="btn-danger" type="button" style="display:none;">Stop</button>
+</form>
+
+<script>
+(() => {
+  const form = document.getElementById('chat-form');
+  const textarea = document.getElementById('prompt');
+  const transcript = document.getElementById('transcript');
+  const statusBar = document.getElementById('status-bar');
+  const sendBtn = document.getElementById('send-btn');
+  const stopBtn = document.getElementById('stop-btn');
+  let abortCtl = null;
+  const ENDPOINT = `/chat/{{ conv.id }}/send`;
+
+  function setBusy(busy) {
+    sendBtn.disabled = busy;
+    textarea.disabled = busy;
+    stopBtn.style.display = busy ? '' : 'none';
+  }
+
+  function scrollDown() {
+    window.requestAnimationFrame(() =>
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+    );
+  }
+
+  function setStatus(text) {
+    statusBar.textContent = text || '';
+    statusBar.style.display = text ? '' : 'none';
+  }
+
+  function append(html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    while (tmp.firstChild) transcript.appendChild(tmp.firstChild);
+    scrollDown();
+  }
+
+  async function send(promptText) {
+    setBusy(true);
+    setStatus('Connecting…');
+    abortCtl = new AbortController();
+    const fd = new FormData();
+    fd.append('prompt', promptText);
+    try {
+      const res = await fetch(ENDPOINT, { method: 'POST', body: fd, signal: abortCtl.signal });
+      if (!res.ok) {
+        const t = await res.text();
+        setStatus('Error: ' + t);
+        setBusy(false);
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buf = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        // Parse SSE chunks separated by blank line.
+        let idx;
+        while ((idx = buf.indexOf('\n\n')) >= 0) {
+          const raw = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          const lines = raw.split('\n');
+          let event = 'message';
+          const dataLines = [];
+          for (const ln of lines) {
+            if (ln.startsWith('event: ')) event = ln.slice(7);
+            else if (ln.startsWith('data: ')) dataLines.push(ln.slice(6));
+          }
+          const data = dataLines.join('\n');
+          if (event === 'append') append(data);
+          else if (event === 'status') setStatus(data);
+          else if (event === 'error') { setStatus('❌ ' + data); }
+          else if (event === 'done') { setStatus(''); }
+        }
+      }
+    } catch (e) {
+      if (e.name !== 'AbortError') setStatus('Network error: ' + e.message);
+    } finally {
+      setBusy(false);
+      abortCtl = null;
+      setStatus('');
+      textarea.focus();
+    }
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = textarea.value.trim();
+    if (!v) return;
+    // Optimistically show the user message; the server will also send one.
+    // (Skipped to avoid duplicate; server echoes the user msg first.)
+    textarea.value = '';
+    send(v);
+  });
+
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  stopBtn.addEventListener('click', () => { if (abortCtl) abortCtl.abort(); });
+
+  scrollDown();
+})();
+</script>
+{% endblock %}

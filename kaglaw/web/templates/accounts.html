@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Accounts · kaglaw{% endblock %}
+{% block body %}
+<h1>Accounts</h1>
+
+<section>
+  <h2>Add account</h2>
+  <form action="/accounts/add" method="post" enctype="multipart/form-data" class="stack">
+    <label>Nick (label, e.g. <code>main</code>, <code>alt1</code>) <input name="nick" required></label>
+    <label>kaggle.json <input type="file" name="kaggle_json" accept="application/json" required></label>
+    <label>Notes <input name="notes" placeholder="optional"></label>
+    <button class="btn-primary">Add</button>
+  </form>
+</section>
+
+<section>
+  <div class="row-between">
+    <h2>Existing ({{ accounts|length }})</h2>
+    <form action="/accounts/rescan" method="post"><button>Rescan disk</button></form>
+  </div>
+  {% if accounts %}
+  <table>
+    <tr><th>Nick</th><th>Kaggle username</th><th>Config dir</th><th>Notes</th><th></th></tr>
+    {% for a in accounts %}
+      <tr>
+        <td><b>{{ a.nick }}</b></td>
+        <td>{{ a.username }}</td>
+        <td><code>{{ a.config_dir }}</code></td>
+        <td>{{ a.notes or "" }}</td>
+        <td>
+          <form action="/accounts/{{ a.nick }}/delete" method="post" onsubmit="return confirm('Remove {{ a.nick }}?');" class="inline">
+            <label class="inline"><input type="checkbox" name="delete_files" value="1"> delete files</label>
+            <button class="btn-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">No accounts yet. Drop a <code>kaggle.json</code> in <code>data/accounts/&lt;nick&gt;/</code>, or upload above.</p>
+  {% endif %}
+</section>
+{% endblock %}

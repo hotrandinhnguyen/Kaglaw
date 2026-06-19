@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Live status · kaglaw{% endblock %}
+{% block body %}
+<div class="row-between">
+  <h1 style="margin:0;">Live status theo nick</h1>
+  <button onclick="location.reload()">↻ Refresh</button>
+</div>
+<p class="muted">Mỗi nick: quota ước lượng + đang chạy <b>cái nào</b> + bao nhiêu job đang chờ.
+  Tự cập nhật khi tải lại (scheduler sync ~60s/lần).</p>
+
+<div class="status-grid">
+  {% for s in status %}
+  <div class="nb-card">
+    <div class="row-between">
+      <h3>{{ s.nick }}</h3>
+      {% if s.free_slots %}
+        <span class="status status-complete">{{ s.free_slots }} slot trống</span>
+      {% else %}
+        <span class="status status-running">đầy ({{ s.running_now }} chạy)</span>
+      {% endif %}
+    </div>
+    <p class="muted" style="margin:6px 0;">
+      GPU 7d: <b>{{ s.gpu_hours_7d }}h</b> · còn ~<b>{{ s.gpu_hours_remaining }}h</b>
+      · submit hôm nay: {{ s.submissions_today }}
+      {% if s.queued_waiting %} · <b>{{ s.queued_waiting }}</b> job đang chờ{% endif %}
+    </p>
+
+    {% if s.active_runs %}
+    <table class="grid" style="margin-top:4px;">
+      <thead><tr><th>Run</th><th>Notebook</th><th>Slug</th><th>Comp</th><th>Status</th><th>Từ lúc</th></tr></thead>
+      <tbody>
+        {% for r in s.active_runs %}
+        <tr>
+          <td><a href="/experiments?batch_id={{ r.batch_id }}">#{{ r.run_id }}</a></td>
+          <td>{{ r.notebook or "" }}</td>
+          <td><small>{{ r.slug }}{% if r.version %} v{{ r.version }}{% endif %}</small></td>
+          <td>{{ r.competition or "" }}</td>
+          <td><span class="status status-{{ r.status }}">{{ r.status }}</span></td>
+          <td><small class="muted">{{ r.pushed_at }}</small></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="muted" style="margin:4px 0 0;">— Không có run nào đang chạy —</p>
+    {% endif %}
+  </div>
+  {% else %}
+    <p class="muted">Chưa có account nào. Thả <code>kaggle.json</code> vào <code>data/accounts/&lt;nick&gt;/</code>.</p>
+  {% endfor %}
+</div>
+{% endblock %}

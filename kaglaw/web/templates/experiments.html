@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Experiments · kaglaw{% endblock %}
+{% block body %}
+<h1>Experiments</h1>
+<p class="muted">Mỗi run = 1 thí nghiệm: param + metric (CV/AUC/score parse từ log) + LB. Sort theo metric.</p>
+
+<form method="get" action="/experiments" class="row" style="align-items:flex-end; gap:12px;">
+  <label>Competition
+    <select name="competition" onchange="this.form.submit()">
+      <option value="">— tất cả —</option>
+      {% for c in competitions %}
+        <option value="{{ c }}" {% if c == competition %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Batch <input name="batch_id" value="{{ batch_id }}" placeholder="batch_id"></label>
+  <button class="btn-primary">Filter</button>
+</form>
+
+<form hx-post="/experiments/reextract" hx-target="#reextract-result" hx-swap="innerHTML" class="row" style="margin-top:8px;">
+  <input type="hidden" name="competition" value="{{ competition }}">
+  <button class="btn">↻ Re-parse metric từ log</button>
+  <pre id="reextract-result" class="result inline"></pre>
+</form>
+
+{% if matrix.best %}
+  <p style="margin-top:12px;">🏆 <b>Best:</b> run #{{ matrix.best.run_id }} ·
+    {{ matrix.best.metric_name }} = <b>{{ matrix.best.metric_value }}</b>
+    · nick {{ matrix.best.nick }}{% if matrix.best.competition %} · {{ matrix.best.competition }}{% endif %}</p>
+{% endif %}
+
+{% if chart %}
+  <div style="margin:10px 0;">{{ chart | safe }}
+    <div class="muted" style="font-size:11px;">Metric mỗi run (xanh lá = best). Hover để xem giá trị.</div>
+  </div>
+{% endif %}
+
+<div class="table-wrap">
+<table class="grid">
+  <thead>
+    <tr>
+      <th>Run</th><th>Nick</th><th>Notebook</th><th>Comp</th><th>Status</th>
+      <th>Metric</th><th>Value</th><th>LB</th><th>Runtime(s)</th>
+      {% for k in matrix.param_keys %}<th>{{ k }}</th>{% endfor %}
+      <th>Batch</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in matrix.rows %}
+    <tr {% if matrix.best and r.run_id == matrix.best.run_id %}class="best-row"{% endif %}>
+      <td>{{ r.run_id }}</td>
+      <td>{{ r.nick }}</td>
+      <td>{{ r.notebook }}</td>
+      <td>{{ r.competition or "" }}</td>
+      <td>{{ r.status or "" }}</td>
+      <td>{{ r.metric_name or "" }}</td>
+      <td><b>{{ r.metric_value if r.metric_value is not none else "" }}</b></td>
+      <td>{{ r.lb_public or "" }}</td>
+      <td>{{ r.runtime_s|round(0) if r.runtime_s else "" }}</td>
+      {% for k in matrix.param_keys %}<td>{{ r["param." ~ k] if r["param." ~ k] is not none else "" }}</td>{% endfor %}
+      <td><a href="/experiments?batch_id={{ r.batch_id }}"><small>{{ r.batch_id }}</small></a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="20" class="muted">Chưa có experiment nào. Push một notebook để tạo run.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="muted" style="margin-top:8px;">{{ matrix.n }} experiment · ⬇ <a href="/export.xlsx">xuất Excel (sheet Experiments)</a></p>
+{% endblock %}

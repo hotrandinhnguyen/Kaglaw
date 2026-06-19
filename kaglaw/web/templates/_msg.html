@@ -1,0 +1,36 @@
+{% if m.role == "user" %}
+<div class="msg msg-user">
+  <div class="msg-role">You</div>
+  <div class="msg-body">{{ m.text or "" }}</div>
+</div>
+{% elif m.role == "assistant" %}
+  {% if m.text %}
+    <div class="msg msg-assistant">
+      <div class="msg-role">kaglaw</div>
+      <div class="msg-body md">{{ m.text | md | safe }}</div>
+    </div>
+  {% endif %}
+  {% if m.tool_calls %}
+    <div class="msg msg-tool-call">
+      <details>
+        <summary>🔧 Calling tools:
+          {% for tc in (m.tool_calls | fromjson) %}<code>{{ tc.name }}</code>{% if not loop.last %}, {% endif %}{% endfor %}
+        </summary>
+        {% for tc in (m.tool_calls | fromjson) %}
+          <div class="tool-block">
+            <div><b>{{ tc.name }}</b> <span class="muted">({{ tc.id }})</span></div>
+            <pre>{{ tc.args | tojson(indent=2) }}</pre>
+          </div>
+        {% endfor %}
+      </details>
+    </div>
+  {% endif %}
+{% elif m.role == "tool" %}
+<div class="msg msg-tool-result {% if m.is_error %}msg-tool-err{% endif %}">
+  <details>
+    <summary>{% if m.is_error %}❌{% else %}✅{% endif %} Result from <code>{{ m.tool_name }}</code></summary>
+    <pre>{{ (m.text or "")[:6000] }}{% if m.text and m.text|length > 6000 %}
+...[truncated]{% endif %}</pre>
+  </details>
+</div>
+{% endif %}

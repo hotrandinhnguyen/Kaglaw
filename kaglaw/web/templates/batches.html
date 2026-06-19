@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Batches · kaglaw{% endblock %}
+{% block body %}
+<h1>Batches & Queue</h1>
+<p class="muted">Sweep = nhiều thí nghiệm trong 1 lần. Dispatcher tự phóng job theo quota mỗi nick (~30s/lần).</p>
+
+{% if notifications %}
+<section>
+  <div class="row-between">
+    <h2 style="margin:0;">🔔 Thông báo</h2>
+    <form hx-post="/notifications/seen" hx-swap="none"><button>Đánh dấu đã đọc</button></form>
+  </div>
+  {% for n in notifications %}
+    <div class="{% if not n.seen %}warn-banner{% endif %}" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;margin-top:6px;">
+      <b>{{ n.title }}</b> <small class="muted">{{ n.created_at }}</small><br>
+      <span class="muted">{{ n.body }}</span>
+    </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section>
+  <h2>Quota theo nick (ước lượng)</h2>
+  <table class="grid">
+    <thead><tr><th>Nick</th><th>Đang chạy</th><th>Slot trống</th><th>GPU 7d (h)</th><th>GPU còn (h)</th><th>Submit hôm nay</th></tr></thead>
+    <tbody>
+      {% for b in budgets %}
+      <tr>
+        <td>{{ b.nick }}</td>
+        <td>{{ b.running_now }}</td>
+        <td>{% if b.free_slots %}<span style="color:var(--ok)">{{ b.free_slots }}</span>{% else %}0{% endif %}</td>
+        <td>{{ b.gpu_hours_7d }}</td>
+        <td>{{ b.gpu_hours_remaining }}</td>
+        <td>{{ b.submissions_today }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">Chưa có account nào.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <form hx-post="/jobs/dispatch" hx-target="#dispatch-result" hx-swap="innerHTML" style="margin-top:10px;">
+    <button class="btn-primary">▶ Dispatch queued jobs ngay</button>
+    <pre id="dispatch-result" class="result inline"></pre>
+  </form>
+</section>
+
+<section>
+  <h2>Batches ({{ batches|length }})</h2>
+  <div class="table-wrap">
+  <table class="grid">
+    <thead><tr>
+      <th>Batch</th><th>Loại</th><th>Comp</th><th>Tạo lúc</th>
+      <th>Jobs</th><th>Queued</th><th>Running</th><th>Done</th><th>Failed</th>
+      <th>Runs</th><th>Best</th><th></th>
+    </tr></thead>
+    <tbody>
+      {% for b in batches %}
+      <tr>
+        <td><a href="/experiments?batch_id={{ b.batch_id }}"><small>{{ b.batch_id }}</small></a></td>
+        <td>{{ b.kind }}</td>
+        <td>{{ b.competition or "" }}</td>
+        <td><small>{{ b.created or "" }}</small></td>
+        <td>{{ b.n_jobs }}</td>
+        <td>{{ b.queued or 0 }}</td>
+        <td>{{ b.running or 0 }}</td>
+        <td>{{ b.done or 0 }}</td>
+        <td>{% if b.failed %}<span style="color:var(--danger)">{{ b.failed }}</span>{% else %}0{% endif %}</td>
+        <td>{{ b.n_runs }}</td>
+        <td>{{ b.best_metric if b.best_metric is not none else "" }}</td>
+        <td>
+          {% if b.queued %}
+          <form hx-post="/batches/{{ b.batch_id }}/cancel" hx-target="closest td" hx-swap="innerHTML">
+            <button class="btn-danger">Cancel</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="12" class="muted">Chưa có batch nào. Dùng <code>launch_sweep</code> trong chat.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

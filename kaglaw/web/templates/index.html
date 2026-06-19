@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · kaglaw{% endblock %}
+{% block body %}
+<h1>Dashboard</h1>
+
+<div class="cards">
+  <div class="card"><b>{{ accounts|length }}</b><span>Accounts</span></div>
+  <div class="card"><b>{{ active_count }}</b><span>Active runs</span></div>
+  <div class="card"><b>{{ recent_runs|length }}</b><span>Recent runs</span></div>
+  <div class="card"><b>{{ recent_subs|length }}</b><span>Recent submissions</span></div>
+</div>
+
+<section>
+  <h2>Recent runs</h2>
+  {% if recent_runs %}
+    <table>
+      <tr><th>ID</th><th>Notebook</th><th>Nick</th><th>Slug</th><th>v</th><th>Status</th><th>Runtime (s)</th></tr>
+      {% for r in recent_runs %}
+        <tr>
+          <td>{{ r.id }}</td>
+          <td>{{ r.notebook_title }}</td>
+          <td>{{ r.account_nick }}</td>
+          <td><code>{{ r.slug }}</code></td>
+          <td>{{ r.version_number or "" }}</td>
+          <td><span class="status status-{{ r.status }}">{{ r.status }}</span></td>
+          <td>{{ "%.1f"|format(r.runtime_seconds) if r.runtime_seconds else "" }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p class="muted">No runs yet. Upload a notebook and push it to some accounts.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Recent submissions</h2>
+  {% if recent_subs %}
+    <table>
+      <tr><th>Comp</th><th>Nick</th><th>File</th><th>Public</th><th>Private</th><th>LB rank</th></tr>
+      {% for s in recent_subs %}
+        <tr>
+          <td><a href="/competitions/{{ s.competition }}">{{ s.competition }}</a></td>
+          <td>{{ s.account_nick }}</td>
+          <td>{{ s.file_name }}</td>
+          <td>{{ s.public_score or "" }}</td>
+          <td>{{ s.private_score or "" }}</td>
+          <td>{{ s.rank_public or "" }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p class="muted">No submissions tracked. Add a competition slug in Competitions page.</p>
+  {% endif %}
+</section>
+{% endblock %}

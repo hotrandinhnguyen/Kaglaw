@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Competitions · kaglaw{% endblock %}
+{% block body %}
+<h1>Competitions</h1>
+
+<section>
+  <h2>Track / sync a competition</h2>
+  <form action="/competitions/sync" method="post" class="row">
+    <input name="competition" placeholder="competition-slug (e.g. titanic)" required>
+    <button class="btn-primary">Sync submissions for all nicks</button>
+  </form>
+  <p class="muted">Pulls every nick's submission list + the public leaderboard, computes rank for matching scores.</p>
+</section>
+
+<section>
+  <h2>Submit a file</h2>
+  <form action="/competitions/submit" method="post" enctype="multipart/form-data" class="stack">
+    <label>Nick
+      <select name="nick" required>
+        {% for a in accounts %}<option>{{ a.nick }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Competition <input name="competition" required></label>
+    <label>Message <input name="message"></label>
+    <label>File <input type="file" name="submission_file" required></label>
+    <button class="btn-primary">Submit</button>
+  </form>
+</section>
+
+<section>
+  <h2>Tracked competitions</h2>
+  {% if tracked %}
+    <ul>{% for c in tracked %}<li><a href="/competitions/{{ c }}">{{ c }}</a></li>{% endfor %}</ul>
+  {% else %}
+    <p class="muted">None yet.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Recent submissions</h2>
+  {% if recent %}
+    <table>
+      <tr><th>Comp</th><th>Nick</th><th>File</th><th>Public</th><th>Private</th><th>Rank</th><th>LB size</th></tr>
+      {% for s in recent %}
+        <tr>
+          <td><a href="/competitions/{{ s.competition }}">{{ s.competition }}</a></td>
+          <td>{{ s.account_nick }}</td>
+          <td>{{ s.file_name }}</td>
+          <td>{{ s.public_score or "" }}</td>
+          <td>{{ s.private_score or "" }}</td>
+          <td>{{ s.rank_public or "" }}</td>
+          <td>{{ s.leaderboard_size or "" }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p class="muted">No submissions recorded.</p>
+  {% endif %}
+</section>
+{% endblock %}

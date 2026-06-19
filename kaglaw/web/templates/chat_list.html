@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Chat · kaglaw{% endblock %}
+{% block body %}
+<div class="row-between">
+  <h1>Conversations</h1>
+  <form action="/chat/new" method="post"><button class="btn-primary">+ New chat</button></form>
+</div>
+
+{% if not settings.api_key %}
+  <section class="warn-banner">
+    Chưa có API key cho provider <b>{{ settings.provider }}</b>. Vào <a href="/settings">Settings</a> để cấu hình.
+  </section>
+{% endif %}
+
+{% if conversations %}
+<table>
+  <tr><th>ID</th><th>Title</th><th>Provider</th><th>Model</th><th>Updated</th><th></th></tr>
+  {% for c in conversations %}
+    <tr>
+      <td>{{ c.id }}</td>
+      <td><a href="/chat/{{ c.id }}">{{ c.title or "(untitled)" }}</a></td>
+      <td>{{ c.provider }}</td>
+      <td><code>{{ c.model }}</code></td>
+      <td>{{ c.updated_at }}</td>
+      <td>
+        <form action="/chat/{{ c.id }}/delete" method="post" onsubmit="return confirm('Delete chat?');" class="inline">
+          <button class="btn-danger">×</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="muted">Chưa có cuộc trò chuyện nào. Bấm "+ New chat" để bắt đầu.</p>
+{% endif %}
+{% endblock %}

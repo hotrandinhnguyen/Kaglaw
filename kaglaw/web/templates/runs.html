@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Runs · kaglaw{% endblock %}
+{% block body %}
+<div class="row-between">
+  <h1>Runs {% if active %}<small class="muted">(active only)</small>{% endif %}</h1>
+  <div class="row">
+    <a href="/runs" class="{% if not active %}active{% endif %}">All</a>
+    <a href="/runs?active=1" class="{% if active %}active{% endif %}">Active</a>
+    <form hx-post="/runs/sync" hx-swap="none" class="inline">
+      <button>Sync active now</button>
+    </form>
+  </div>
+</div>
+
+{% if runs %}
+<table>
+  <tr>
+    <th>ID</th><th>Notebook</th><th>Nick</th><th>Slug</th><th>v</th><th>Status</th>
+    <th>Pushed</th><th>Done</th><th>Runtime (s)</th><th>GPU</th><th>Output</th><th></th>
+  </tr>
+  {% for r in runs %}
+    <tr>
+      <td>{{ r.id }}</td>
+      <td>{{ r.notebook_title }}</td>
+      <td>{{ r.account_nick }}</td>
+      <td><code>{{ r.slug }}</code></td>
+      <td>{{ r.version_number or "" }}</td>
+      <td><span class="status status-{{ r.status }}">{{ r.status }}</span></td>
+      <td>{{ r.pushed_at }}</td>
+      <td>{{ r.completed_at or "" }}</td>
+      <td>{{ "%.1f"|format(r.runtime_seconds) if r.runtime_seconds else "" }}</td>
+      <td>{% if r.used_gpu %}GPU{% elif r.used_tpu %}TPU{% else %}CPU{% endif %}</td>
+      <td>{% if r.output_path %}<code title="{{ r.output_path }}">{{ r.output_path[-40:] }}</code>{% endif %}</td>
+      <td>
+        <form hx-post="/runs/{{ r.id }}/sync" hx-swap="none" class="inline">
+          <button>↻</button>
+        </form>
+      </td>
+    </tr>
+    {% if r.error %}
+      <tr><td colspan="12" class="error-row">{{ r.error }}</td></tr>
+    {% endif %}
+  {% endfor %}
+</table>
+{% else %}
+<p class="muted">No runs.</p>
+{% endif %}
+{% endblock %}
